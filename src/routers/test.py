@@ -28,6 +28,23 @@ def db_test(db: Session = Depends(get_db)):
         import traceback
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 
+@router.get("/db-tables")
+def db_tables(db: Session = Depends(get_db)):
+    try:
+        from sqlalchemy import text
+        result = db.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema='public'"))
+        tables = [row[0] for row in result]
+        
+        # Test if we can query users
+        users_count = -1
+        if 'users' in tables:
+            users_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar()
+            
+        return {"status": "success", "tables": tables, "users_count": users_count}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
 class AnswerSubmit(BaseModel):
     question: str
     answer: str
