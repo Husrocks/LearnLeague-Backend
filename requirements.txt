@@ -11,4 +11,3 @@ httpx
 celery
 redis
 gradio
-spaces==0.32.0
