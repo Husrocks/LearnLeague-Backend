@@ -1,7 +1,9 @@
 import gradio as gr
+import spaces
 from src.main import app as fastapi_app
 
 # Create a simple Gradio UI to satisfy Hugging Face's requirement
+@spaces.GPU
 def health_check(name):
     return "LearnLeague API is running successfully! Access the endpoints at /docs"
 
