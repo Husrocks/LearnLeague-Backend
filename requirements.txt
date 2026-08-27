@@ -10,4 +10,4 @@ pytest
 httpx
 celery
 redis
-gradio
+gradio>=4.44.1
