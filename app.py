@@ -30,16 +30,15 @@ with gr.Blocks(title="LearnLeague API") as demo:
 demo.queue()
 
 # ============================================================
-# Launch Gradio with prevent_thread_lock so we can add routes
+# In Gradio 5.x, use App.create_app to get the FastAPI app
 # ============================================================
-demo.launch(server_name="0.0.0.0", server_port=7860, prevent_thread_lock=True)
+from gradio.routes import App as GradioApp
 
-# ============================================================
-# Add our FastAPI routes onto the running Gradio server
-# ============================================================
+server_app = GradioApp.create_app(demo, app_kwargs={})
+
+# Add CORS middleware
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-
-demo.server.app.add_middleware(
+server_app.add_middleware(
     CORSMiddleware,
     allow_origins=[frontend_url, "http://localhost:3000", "*"],
     allow_credentials=True,
@@ -47,15 +46,16 @@ demo.server.app.add_middleware(
     allow_headers=["*"],
 )
 
-demo.server.app.include_router(auth.router)
-demo.server.app.include_router(daily.router)
-demo.server.app.include_router(social.router)
-demo.server.app.include_router(test.router)
-demo.server.app.include_router(tasks.router)
+# Mount our FastAPI routers onto the Gradio app
+server_app.include_router(auth.router)
+server_app.include_router(daily.router)
+server_app.include_router(social.router)
+server_app.include_router(test.router)
+server_app.include_router(tasks.router)
 
-@demo.server.app.get("/api")
+@server_app.get("/api")
 def read_root():
     return {"message": "Welcome to the LearnLeague Backend API"}
 
-# Keep process alive
-demo.block_thread()
+# Run the combined app
+uvicorn.run(server_app, host="0.0.0.0", port=7860)
