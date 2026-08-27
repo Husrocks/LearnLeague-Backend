@@ -27,7 +27,7 @@ with gr.Blocks(title="LearnLeague API") as demo:
         out = gr.Textbox(label="Status")
     gr.Button("Check Status").click(fn=health_check, inputs=inp, outputs=out)
 
-demo.queue()  # Required for ZeroGPU — do NOT remove
+demo.queue()
 
 # ============================================================
 # FastAPI app with all our routes
@@ -54,6 +54,6 @@ def read_root():
     return {"message": "Welcome to the LearnLeague Backend API"}
 
 # ============================================================
-# Mount Gradio into FastAPI — HF will pick up this `app` var
+# Mount Gradio into FastAPI — compatible with Gradio 5.x
 # ============================================================
 app = gr.mount_gradio_app(api, demo, path="/ui")
