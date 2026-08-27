@@ -18,6 +18,16 @@ def debug_env():
         "has_secret": "SECRET_KEY" in os.environ,
     }
 
+@router.get("/db-test")
+def db_test(db: Session = Depends(get_db)):
+    try:
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
+        return {"status": "success"}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
 class AnswerSubmit(BaseModel):
     question: str
     answer: str
