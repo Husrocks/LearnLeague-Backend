@@ -11,11 +11,16 @@ app = FastAPI(title="LearnLeague API")
 import os
 
 # Configure CORS for Next.js frontend
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
+frontend_url = frontend_url.rstrip("/")  # Remove trailing slash if user added it accidentally
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://localhost:3000"],
+    allow_origins=[
+        frontend_url,
+        "http://localhost:3000",
+        "https://learn-league-platform.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
