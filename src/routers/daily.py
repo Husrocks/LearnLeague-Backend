@@ -4,11 +4,12 @@ from datetime import date, timedelta
 from ..database import get_db
 from ..models import User, DailyLog, Task
 from ..schemas import DailyLogCreate, DailyLogResponse
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 
 @router.post("/{user_id}/log", response_model=DailyLogResponse)
-def log_daily_learning(user_id: int, log_data: DailyLogCreate, db: Session = Depends(get_db)):
+def log_daily_learning(user_id: int, log_data: DailyLogCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

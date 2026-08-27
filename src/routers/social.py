@@ -4,16 +4,17 @@ from typing import List
 from ..database import get_db
 from ..models import User, Friendship
 from ..schemas import UserResponse, FriendAdd
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/social", tags=["social"])
 
 @router.get("/leaderboard", response_model=List[UserResponse])
-def get_leaderboard(db: Session = Depends(get_db)):
+def get_leaderboard(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     users = db.query(User).order_by(User.total_xp.desc()).limit(50).all()
     return users
 
 @router.get("/friends/{user_id}", response_model=List[UserResponse])
-def get_friends(user_id: int, db: Session = Depends(get_db)):
+def get_friends(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -21,7 +22,7 @@ def get_friends(user_id: int, db: Session = Depends(get_db)):
     return user.friends
 
 @router.post("/friends/{user_id}/add", response_model=UserResponse)
-def add_friend(user_id: int, payload: FriendAdd, db: Session = Depends(get_db)):
+def add_friend(user_id: int, payload: FriendAdd, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     friend = db.query(User).filter(User.email == payload.friend_email).first()
     
@@ -39,7 +40,7 @@ def add_friend(user_id: int, payload: FriendAdd, db: Session = Depends(get_db)):
     return friend
 
 @router.delete("/friends/{user_id}/remove/{friend_id}")
-def remove_friend(user_id: int, friend_id: int, db: Session = Depends(get_db)):
+def remove_friend(user_id: int, friend_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     friend = db.query(User).filter(User.id == friend_id).first()
     

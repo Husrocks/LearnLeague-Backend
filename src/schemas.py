@@ -57,3 +57,9 @@ class DailyLogResponse(DailyLogBase):
 
 class FriendAdd(BaseModel):
     friend_email: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

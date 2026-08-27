@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from ..database import get_db
 from ..models import User, DailyLog
 from ..services.ai import generate_weekly_questions, evaluate_answer
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/test", tags=["test"])
 
@@ -13,7 +14,7 @@ class AnswerSubmit(BaseModel):
     answer: str
 
 @router.get("/{user_id}/generate")
-def generate_test(user_id: int, db: Session = Depends(get_db)):
+def generate_test(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # 1. Fetch user's logs for the past 7 days
     seven_days_ago = date.today() - timedelta(days=7)
     logs = db.query(DailyLog).filter(
@@ -34,7 +35,7 @@ def generate_test(user_id: int, db: Session = Depends(get_db)):
     return {"question": question, "topics_covered": topics}
 
 @router.post("/{user_id}/evaluate")
-def submit_answer(user_id: int, payload: AnswerSubmit, db: Session = Depends(get_db)):
+def submit_answer(user_id: int, payload: AnswerSubmit, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # 1. Call Groq AI to evaluate
     evaluation = evaluate_answer(payload.question, payload.answer)
     
