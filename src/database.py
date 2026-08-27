@@ -1,0 +1,21 @@
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+# Use DATABASE_URL from environment if available (e.g. for Supabase), otherwise use local SQLite
+SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./learnleague.db")
+
+# If using Postgres, check_same_thread is invalid, so we only apply it to SQLite
+connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args=connect_args
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

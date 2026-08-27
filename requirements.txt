@@ -1,0 +1,13 @@
+fastapi[standard]
+sqlalchemy
+alembic
+pydantic
+pydantic-settings
+python-dotenv
+groq
+psycopg2-binary
+pytest
+httpx
+
+celery
+redis
