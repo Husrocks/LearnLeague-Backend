@@ -1,12 +1,15 @@
 import os
 import gradio as gr
 import spaces
-from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 from src.database import engine, Base
 from src.routers import auth, daily, social, test, tasks
 
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
+
+frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
 
 # ============================================================
 # Multiple @spaces.GPU functions — required for ZeroGPU
@@ -32,7 +35,7 @@ def api_info(x: str = ""):
     return "📡 LearnLeague REST API v1.0"
 
 # ============================================================
-# Gradio UI with all GPU functions registered as event handlers
+# Gradio UI
 # ============================================================
 with gr.Blocks(title="LearnLeague API") as demo:
     gr.Markdown("# 🏆 LearnLeague API")
@@ -61,32 +64,42 @@ with gr.Blocks(title="LearnLeague API") as demo:
 demo.queue()
 
 # ============================================================
-# Launch with prevent_thread_lock so we can add routes
-# In Gradio 5.x, demo.server_app is the FastAPI app
+# CORS middleware added at construction time via app_kwargs
+# This avoids "Cannot add middleware after app has started"
 # ============================================================
-demo.launch(server_name="0.0.0.0", server_port=7860, prevent_thread_lock=True, ssr_mode=False)
-
-# Access Gradio 5.x FastAPI app via demo.server_app
-fastapi_app = demo.server_app
-
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-fastapi_app.add_middleware(
+cors_middleware = Middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://localhost:3000", "*"],
+    allow_origins=[
+        frontend_url,
+        "http://localhost:3000",
+        "https://learn-league-platform.vercel.app",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-fastapi_app.include_router(auth.router)
-fastapi_app.include_router(daily.router)
-fastapi_app.include_router(social.router)
-fastapi_app.include_router(test.router)
-fastapi_app.include_router(tasks.router)
+demo.launch(
+    server_name="0.0.0.0",
+    server_port=7860,
+    prevent_thread_lock=True,
+    ssr_mode=False,
+    app_kwargs={"middleware": [cors_middleware]},
+)
 
-@fastapi_app.get("/api")
+# ============================================================
+# Add our API routes AFTER launch (routers are safe post-start)
+# ============================================================
+demo.server_app.include_router(auth.router)
+demo.server_app.include_router(daily.router)
+demo.server_app.include_router(social.router)
+demo.server_app.include_router(test.router)
+demo.server_app.include_router(tasks.router)
+
+@demo.server_app.get("/api")
 def read_root():
     return {"message": "Welcome to the LearnLeague Backend API"}
 
-# Keep the process alive
+# Keep process alive
 demo.block_thread()
