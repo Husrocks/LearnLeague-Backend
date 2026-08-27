@@ -1,24 +1,49 @@
+import os
 import gradio as gr
 import spaces
-from src.main import app as fastapi_app
+from fastapi.middleware.cors import CORSMiddleware
+from src.database import engine, Base
+from src.routers import auth, daily, social, test, tasks
 
-# Create a simple Gradio UI to satisfy Hugging Face's requirement
-@spaces.GPU
-def health_check(name):
-    return "LearnLeague API is running successfully! Access the endpoints at /docs"
+# Initialize database tables
+Base.metadata.create_all(bind=engine)
 
-demo = gr.Interface(
-    fn=health_check, 
-    inputs="text", 
-    outputs="text",
-    title="LearnLeague API Status"
+# ============================================================
+# Gradio UI (required for ZeroGPU spaces - must have @spaces.GPU)
+# ============================================================
+@spaces.GPU(duration=5)
+def health_check(query: str = ""):
+    return "✅ LearnLeague API is running! Visit /docs for API reference."
+
+with gr.Blocks(title="LearnLeague API") as demo:
+    gr.Markdown("# 🏆 LearnLeague Backend API")
+    gr.Markdown("FastAPI backend running inside this Space. Access the full API at `/docs`.")
+    with gr.Row():
+        inp = gr.Textbox(label="Health Check", placeholder="Type anything and click Check")
+        out = gr.Textbox(label="Response")
+    btn = gr.Button("Check API Status")
+    btn.click(fn=health_check, inputs=inp, outputs=out)
+
+# ============================================================
+# Mount our FastAPI routers onto Gradio's built-in FastAPI app
+# This avoids the gr.mount_gradio_app() conflict with ZeroGPU
+# ============================================================
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+demo.app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[frontend_url, "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Hugging Face's Gradio SDK looks for an 'app' variable. 
-# We mount our FastAPI app and the Gradio UI together.
-app = gr.mount_gradio_app(fastapi_app, demo, path="/ui")
+demo.app.include_router(auth.router)
+demo.app.include_router(daily.router)
+demo.app.include_router(social.router)
+demo.app.include_router(test.router)
+demo.app.include_router(tasks.router)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)
-
+@demo.app.get("/api")
+def read_root():
+    return {"message": "Welcome to the LearnLeague Backend API"}
