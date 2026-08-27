@@ -2,12 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
+import os
 from ..database import get_db
 from ..models import User, DailyLog
 from ..services.ai import generate_weekly_questions, evaluate_answer
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/test", tags=["test"])
+
+@router.get("/debug-env")
+def debug_env():
+    return {
+        "has_db_url": "DATABASE_URL" in os.environ,
+        "db_url_starts_with": os.environ.get("DATABASE_URL", "")[:15] if "DATABASE_URL" in os.environ else None,
+        "has_secret": "SECRET_KEY" in os.environ,
+    }
 
 class AnswerSubmit(BaseModel):
     question: str
