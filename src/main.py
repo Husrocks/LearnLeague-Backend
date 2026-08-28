@@ -16,11 +16,7 @@ frontend_url = frontend_url.rstrip("/")  # Remove trailing slash if user added i
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        frontend_url,
-        "http://localhost:3000",
-        "https://learn-league-platform.vercel.app"
-    ],
+    allow_origins=["*"],  # Allow all origins (development)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
