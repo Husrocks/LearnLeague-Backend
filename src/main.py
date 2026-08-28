@@ -47,6 +47,22 @@ async def log_requests(request: Request, call_next):
     response.headers["x-request-id"] = request_id
     return response
 
+import traceback
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Log it locally
+    logger.error(f"Global exception: {exc}")
+    logger.error(traceback.format_exc())
+    # Return details in HTTP response for debugging
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error_message": str(exc), "traceback": traceback.format_exc()},
+        headers={"Access-Control-Allow-Origin": frontend_url, "Access-Control-Allow-Credentials": "true"}
+    )
+
+
 app.include_router(auth.router)
 app.include_router(daily.router)
 app.include_router(social.router)
