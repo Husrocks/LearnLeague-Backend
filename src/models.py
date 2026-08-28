@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Date
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import relationship
 from datetime import datetime, date, timezone
-
-Base = declarative_base()
+from .database import Base
 
 class Friendship(Base):
     __tablename__ = "friendships"
