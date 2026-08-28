@@ -34,10 +34,9 @@ api = FastAPI(title="LearnLeague API")
 api.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        frontend_url,
+        frontend_url.rstrip("/"),
         "http://localhost:3000",
         "https://learn-league-platform.vercel.app",
-        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],

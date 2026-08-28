@@ -18,6 +18,7 @@ WORKDIR $HOME/app
 
 # Copy the rest of the application code with appropriate permissions
 COPY --chown=user src/ ./src/
+COPY --chown=user app.py index.py ./
 
 # Hugging Face Spaces run apps on port 7860
 EXPOSE 7860

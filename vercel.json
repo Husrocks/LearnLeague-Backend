@@ -10,5 +10,15 @@
       "src": "/(.*)",
       "dest": "index.py"
     }
+  ],
+  "crons": [
+    {
+      "path": "/cron/streaks",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/cron/weekly-winner",
+      "schedule": "0 0 * * 0"
+    }
   ]
 }

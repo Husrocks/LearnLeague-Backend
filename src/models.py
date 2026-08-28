@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Date
 from sqlalchemy.orm import declarative_base, relationship
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 Base = declarative_base()
 
@@ -44,7 +44,7 @@ class DailyLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    date = Column(Date, default=date.today)
+    date = Column(Date, default=lambda: datetime.now(timezone.utc).date())
     
     hours_studied = Column(Float, default=0.0)
     topics = Column(String)
@@ -65,3 +65,13 @@ class Task(Base):
     date_assigned = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User", back_populates="tasks")
+
+class WeeklyWinner(Base):
+    __tablename__ = "weekly_winners"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    week_start = Column(Date, nullable=False)  # Monday of the winning week
+    total_xp = Column(Integer, nullable=False)
+    tasks_completed = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    user = relationship("User")

@@ -11,7 +11,10 @@ from ..dependencies import get_current_user
 router = APIRouter(prefix="/test", tags=["test"])
 
 @router.get("/debug-env")
-def debug_env():
+def debug_env(current_user: User = Depends(get_current_user)):
+    """Diagnostic endpoint — admin only."""
+    if getattr(current_user, "role", None) != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
     return {
         "has_db_url": "DATABASE_URL" in os.environ,
         "db_url_starts_with": os.environ.get("DATABASE_URL", "")[:15] if "DATABASE_URL" in os.environ else None,
@@ -19,7 +22,10 @@ def debug_env():
     }
 
 @router.get("/db-test")
-def db_test(db: Session = Depends(get_db)):
+def db_test(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """DB connectivity check — admin only."""
+    if getattr(current_user, "role", None) != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
     try:
         from sqlalchemy import text
         db.execute(text("SELECT 1"))
@@ -29,17 +35,19 @@ def db_test(db: Session = Depends(get_db)):
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 
 @router.get("/db-tables")
-def db_tables(db: Session = Depends(get_db)):
+def db_tables(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Schema inspection — admin only."""
+    if getattr(current_user, "role", None) != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
     try:
         from sqlalchemy import text
         result = db.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema='public'"))
         tables = [row[0] for row in result]
-        
-        # Test if we can query users
+
         users_count = -1
         if 'users' in tables:
             users_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar()
-            
+
         return {"status": "success", "tables": tables, "users_count": users_count}
     except Exception as e:
         import traceback

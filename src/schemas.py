@@ -25,7 +25,11 @@ class UserBase(BaseModel):
     learning_goal: str = "General"
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=8, max_length=128)
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    learning_goal: Optional[str] = None
 
 class UserResponse(UserBase):
     id: int
@@ -39,9 +43,13 @@ class UserResponse(UserBase):
         from_attributes = True
 
 class DailyLogBase(BaseModel):
-    hours_studied: float
-    topics: str
-    reflection: str
+    hours_studied: float = Field(
+        ge=0.0,
+        le=24.0,
+        description="Hours studied today (0–24)",
+    )
+    topics: str = Field(min_length=1, max_length=500, description="Topics covered")
+    reflection: str = Field(min_length=1, max_length=2000, description="Daily reflection")
 
 class DailyLogCreate(DailyLogBase):
     tasks: List[TaskBase] = []
@@ -63,3 +71,13 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+class WeeklyWinnerResponse(BaseModel):
+    id: int
+    user_id: int
+    winner_name: str
+    week_start: date
+    total_xp: int
+    tasks_completed: int
+    class Config:
+        from_attributes = True

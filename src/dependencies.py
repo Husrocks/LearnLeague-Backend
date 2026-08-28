@@ -30,3 +30,17 @@ def get_current_user(
         raise credentials_exception
 
     return user
+
+
+def assert_owns_or_admin(current_user: User, target_user_id: int) -> None:
+    """Raise HTTP 403 if current_user is not target_user and is not an admin.
+
+    Use this at the start of any mutation endpoint that accepts a user_id path
+    parameter, to prevent authenticated-but-unauthorized cross-user writes.
+    Admins (role == 'admin') bypass the check so they can manage all users.
+    """
+    if current_user.id != target_user_id and getattr(current_user, "role", None) != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this resource",
+        )

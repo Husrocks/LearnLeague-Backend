@@ -1,5 +1,9 @@
 import os
+import json
+import logging
 from groq import Groq
+
+logger = logging.getLogger(__name__)
 
 # Expecting GROQ_API_KEY in environment variables
 client = Groq(api_key=os.environ.get("GROQ_API_KEY", "mock-key-for-dev"))
@@ -36,6 +40,9 @@ def evaluate_answer(question: str, user_answer: str) -> dict:
     """
     Evaluates the user's answer and returns a score and feedback.
     """
+    if len(user_answer) > 4000:
+        return {"score": 0, "feedback": "Answer too long. Please keep answers under 4,000 characters.", "follow_up": ""}
+
     if os.environ.get("GROQ_API_KEY") == "mock-key-for-dev" or not os.environ.get("GROQ_API_KEY"):
         return {
             "score": 85,
@@ -67,9 +74,10 @@ def evaluate_answer(question: str, user_answer: str) -> dict:
         response_format={"type": "json_object"}
     )
     
-    import json
     try:
         result = json.loads(completion.choices[0].message.content)
         return result
-    except:
-        return {"score": 50, "feedback": "Failed to parse evaluation.", "follow_up": "Try again?"}
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        raw = completion.choices[0].message.content[:200] if completion.choices else "None"
+        logger.warning("AI evaluation parse error: %s | raw=%s", e, raw)
+        return {"score": 0, "feedback": "Could not evaluate your answer. Please try again.", "follow_up": ""}
