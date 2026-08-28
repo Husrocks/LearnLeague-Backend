@@ -14,9 +14,15 @@ import os
 frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
 frontend_url = frontend_url.rstrip("/")  # Remove trailing slash if user added it accidentally
 
+origins = [
+    frontend_url,
+    "http://localhost:3000",
+    "https://learn-league-platform.vercel.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (development)
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
