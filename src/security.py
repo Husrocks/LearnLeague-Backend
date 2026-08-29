@@ -30,15 +30,20 @@ SECRET_KEY: str = _SECRET_RAW
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_SECONDS = 60 * 60 * 24 * 7  # 7 days
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+import bcrypt
 
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+    # bcrypt truncates at 72 bytes
+    pwd_bytes = plain.encode("utf-8")[:72]
+    return bcrypt.hashpw(pwd_bytes, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        pwd_bytes = plain.encode("utf-8")[:72]
+        return bcrypt.checkpw(pwd_bytes, hashed.encode("utf-8"))
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict) -> str:
