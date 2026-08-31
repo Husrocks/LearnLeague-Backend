@@ -31,17 +31,6 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     learning_goal: Optional[str] = None
 
-class UserResponse(UserBase):
-    id: int
-    role: str
-    streak: int
-    longest_streak: int
-    total_xp: int
-    tasks: List[TaskResponse] = []
-
-    class Config:
-        from_attributes = True
-
 class DailyLogBase(BaseModel):
     hours_studied: float = Field(
         ge=0.0,
@@ -59,6 +48,18 @@ class DailyLogResponse(DailyLogBase):
     user_id: int
     date: date
     xp_earned: int
+
+    class Config:
+        from_attributes = True
+
+class UserResponse(UserBase):
+    id: int
+    role: str
+    streak: int
+    longest_streak: int
+    total_xp: int
+    tasks: List[TaskResponse] = []
+    logs: List[DailyLogResponse] = []
 
     class Config:
         from_attributes = True
