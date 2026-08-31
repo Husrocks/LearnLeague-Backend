@@ -23,31 +23,46 @@ def log_daily_learning(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Prevent double-logging on the same day
+    # Prevent double-logging error, append instead
     today = date.today()
     existing_log = db.query(DailyLog).filter(
         DailyLog.user_id == user_id, DailyLog.date == today
     ).first()
-    if existing_log:
-        raise HTTPException(status_code=400, detail="Already logged learning for today")
 
     # XP Calculation Engine: 10 XP per hour + 5 XP per completed task
-    # T4 fix: use .status == "completed" instead of the non-existent .done field
     tasks_done = sum(1 for t in log_data.tasks if t.status == "completed")
     xp_earned = int((log_data.hours_studied * 10) + (tasks_done * 5))
 
-    new_log = DailyLog(
-        user_id=user_id,
-        date=today,
-        hours_studied=log_data.hours_studied,
-        topics=log_data.topics,
-        reflection=log_data.reflection,
-        xp_earned=xp_earned,
-    )
-    db.add(new_log)
+    if existing_log:
+        existing_log.hours_studied += log_data.hours_studied
+        if log_data.topics:
+            existing_log.topics = f"{existing_log.topics}, {log_data.topics}" if existing_log.topics else log_data.topics
+        if log_data.reflection:
+            existing_log.reflection = f"{existing_log.reflection}\n{log_data.reflection}" if existing_log.reflection else log_data.reflection
+        existing_log.xp_earned += xp_earned
+        new_log = existing_log
+    else:
+        new_log = DailyLog(
+            user_id=user_id,
+            date=today,
+            hours_studied=log_data.hours_studied,
+            topics=log_data.topics,
+            reflection=log_data.reflection,
+            xp_earned=xp_earned,
+        )
+        db.add(new_log)
+        
+        # Streak Engine: increment if yesterday was logged, reset to 1 otherwise
+        yesterday = today - timedelta(days=1)
+        yesterday_log = db.query(DailyLog).filter(
+            DailyLog.user_id == user_id, DailyLog.date == yesterday
+        ).first()
+
+        user.streak = (user.streak + 1) if yesterday_log else 1
+        if user.streak > user.longest_streak:
+            user.longest_streak = user.streak
 
     # Persist each task submitted with the log
-    # T4 fix: use .title and .status instead of the non-existent .label and .done fields
     for task_data in log_data.tasks:
         new_task = Task(
             user_id=user_id,
@@ -55,16 +70,6 @@ def log_daily_learning(
             status=task_data.status,
         )
         db.add(new_task)
-
-    # Streak Engine: increment if yesterday was logged, reset to 1 otherwise
-    yesterday = today - timedelta(days=1)
-    yesterday_log = db.query(DailyLog).filter(
-        DailyLog.user_id == user_id, DailyLog.date == yesterday
-    ).first()
-
-    user.streak = (user.streak + 1) if yesterday_log else 1
-    if user.streak > user.longest_streak:
-        user.longest_streak = user.streak
 
     user.total_xp += xp_earned
 
