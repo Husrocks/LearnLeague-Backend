@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 from ..database import get_db
 from ..models import User
 from ..schemas import UserCreate, UserResponse, TokenResponse, UserUpdate
@@ -50,11 +51,20 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             detail="Incorrect email or password",
         )
     token = create_access_token({"sub": str(user.id)})
+    user.last_seen = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(user)
     return TokenResponse(access_token=token, token_type="bearer", user=user)
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.last_seen = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(current_user)
     return current_user
 
 

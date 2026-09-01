@@ -26,6 +26,9 @@ class User(Base):
     total_xp = Column(Integer, default=0)
     learning_goal = Column(String, default="General")
     
+    # Presence
+    last_seen = Column(DateTime, nullable=True)
+    
     # Relationships
     logs = relationship("DailyLog", back_populates="user")
     tasks = relationship("Task", back_populates="user")

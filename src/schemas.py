@@ -63,6 +63,7 @@ class UserResponse(UserBase):
     streak: int
     longest_streak: int
     total_xp: int
+    last_seen: Optional[datetime] = None
     tasks: List[TaskResponse] = []
     logs: List[DailyLogResponse] = []
 
