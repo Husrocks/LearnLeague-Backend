@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import auth, daily, social, test, tasks, cron, winner
+from .routers import auth, daily, social, test, tasks, cron, winner, admin
 from sqlalchemy import text
 
 # Create tables and seed initial data if empty
@@ -138,6 +138,7 @@ app.include_router(test.router)
 app.include_router(tasks.router)
 app.include_router(cron.router)
 app.include_router(winner.router)
+app.include_router(admin.router)
 
 @app.get("/")
 def read_root():

@@ -18,6 +18,13 @@ class TaskResponse(TaskBase):
     class Config:
         from_attributes = True
 
+class AdminTaskResponse(TaskResponse):
+    username: str
+    name: str
+
+    class Config:
+        from_attributes = True
+
 class UserBase(BaseModel):
     name: str
     username: str
@@ -30,6 +37,9 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     learning_goal: Optional[str] = None
+
+class RoleUpdate(BaseModel):
+    role: str
 
 class DailyLogBase(BaseModel):
     hours_studied: float = Field(
