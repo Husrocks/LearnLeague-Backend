@@ -9,10 +9,12 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="LearnLeague API")
 
 import os
+from urllib.parse import urlparse
 
 # Configure CORS for Next.js frontend
-frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
-frontend_url = frontend_url.rstrip("/")  # Remove trailing slash if user added it accidentally
+raw_frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
+parsed = urlparse(raw_frontend_url)
+frontend_url = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else raw_frontend_url.rstrip("/")
 
 origins = [
     frontend_url,
@@ -58,8 +60,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     # Return details in HTTP response for debugging
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error_message": str(exc), "traceback": traceback.format_exc()},
-        headers={"Access-Control-Allow-Origin": frontend_url, "Access-Control-Allow-Credentials": "true"}
+        content={"detail": "Internal Server Error", "error_message": str(exc), "traceback": traceback.format_exc()}
     )
 
 

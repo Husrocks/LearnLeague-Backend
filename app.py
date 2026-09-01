@@ -72,7 +72,10 @@ def seed_dev_data():
 
 seed_dev_data()
 
-frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
+from urllib.parse import urlparse
+raw_frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
+parsed = urlparse(raw_frontend_url)
+frontend_url = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else raw_frontend_url.rstrip("/")
 
 # ============================================================
 # FastAPI app with all routes
