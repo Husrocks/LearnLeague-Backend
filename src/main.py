@@ -37,32 +37,39 @@ seed_dev_data()
 
 app = FastAPI(title="LearnLeague API")
 
-import os
+import os, logging, uuid, traceback
 from urllib.parse import urlparse
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
-# Configure CORS for Next.js frontend
-raw_frontend_url = os.environ.get("FRONTEND_URL", "https://learn-league-platform.vercel.app")
-parsed = urlparse(raw_frontend_url)
-frontend_url = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else raw_frontend_url.rstrip("/")
-
-origins = [
-    frontend_url,
+# ---------------------------------------------------------------------------
+# CORS — must be added FIRST so it wraps everything (Starlette runs middleware
+# in reverse order of registration, outermost = last added).
+# ---------------------------------------------------------------------------
+ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://learn-league-platform.vercel.app"
+    "https://learn-league-platform.vercel.app",
 ]
+raw = os.environ.get("FRONTEND_URL", "")
+if raw:
+    parsed = urlparse(raw)
+    clean = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else raw.rstrip("/")
+    if clean not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(clean)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=ALLOWED_ORIGINS,
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
-import logging, uuid
-from fastapi import Request
-
+# ---------------------------------------------------------------------------
+# Request logging middleware (runs INSIDE the CORS wrapper)
+# ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s"
@@ -79,20 +86,37 @@ async def log_requests(request: Request, call_next):
     response.headers["x-request-id"] = request_id
     return response
 
-import traceback
-from fastapi.responses import JSONResponse
-
+# ---------------------------------------------------------------------------
+# Global exception handler
+# ---------------------------------------------------------------------------
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # Log it locally
     logger.error(f"Global exception: {exc}")
     logger.error(traceback.format_exc())
-    # Return details in HTTP response for debugging
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal Server Error", "error_message": str(exc), "traceback": traceback.format_exc()}
     )
 
+# ---------------------------------------------------------------------------
+# Explicit OPTIONS preflight catch-all (belt-and-suspenders for Vercel)
+# ---------------------------------------------------------------------------
+from fastapi.routing import APIRoute
+from starlette.routing import Route
+from starlette.responses import Response
+
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str, request: Request):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, x-request-id",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "86400",
+        },
+    )
 
 app.include_router(auth.router)
 app.include_router(daily.router)
