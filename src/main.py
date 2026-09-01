@@ -93,9 +93,14 @@ async def log_requests(request: Request, call_next):
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception: {exc}")
     logger.error(traceback.format_exc())
+    origin = request.headers.get("origin", "https://learn-league-platform.vercel.app")
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error_message": str(exc), "traceback": traceback.format_exc()}
+        content={"detail": "Internal Server Error", "error_message": str(exc)},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        },
     )
 
 # ---------------------------------------------------------------------------

@@ -8,7 +8,13 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "index.py"
+      "dest": "index.py",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://learn-league-platform.vercel.app",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type, x-request-id",
+        "Access-Control-Allow-Credentials": "true"
+      }
     }
   ],
   "crons": [
