@@ -2,9 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import auth, daily, social, test, tasks, cron, winner
+from sqlalchemy import text
 
 # Create tables and seed initial data if empty
 Base.metadata.create_all(bind=engine)
+
+# Hack to add last_seen column since create_all doesn't alter existing tables
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN last_seen TIMESTAMP"))
+except Exception:
+    pass # Column already exists or db doesn't support it
 
 from .database import SessionLocal
 from .models import User, Task
