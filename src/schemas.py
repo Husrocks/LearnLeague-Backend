@@ -37,17 +37,22 @@ class DailyLogBase(BaseModel):
         le=24.0,
         description="Hours studied today (0–24)",
     )
+    # Strict validation for input only
     topics: str = Field(min_length=1, max_length=500, description="Topics covered")
     reflection: str = Field(min_length=1, max_length=2000, description="Daily reflection")
 
 class DailyLogCreate(DailyLogBase):
     tasks: List[TaskBase] = []
 
-class DailyLogResponse(DailyLogBase):
+class DailyLogResponse(BaseModel):
+    """Lenient schema for reading logs from DB — no min/max constraints so old records don't crash."""
     id: int
     user_id: int
     date: date
     xp_earned: int
+    hours_studied: float = 0.0
+    topics: Optional[str] = ""
+    reflection: Optional[str] = ""
 
     class Config:
         from_attributes = True

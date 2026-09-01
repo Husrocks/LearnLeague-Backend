@@ -10,17 +10,22 @@ from ..dependencies import get_current_user
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+from sqlalchemy import func
+
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == user.email).first():
+    clean_email = user.email.strip().lower()
+    clean_username = user.username.strip()
+
+    if db.query(User).filter(func.lower(User.email) == clean_email).first():
         raise HTTPException(status_code=409, detail="Email already registered")
-    if db.query(User).filter(User.username == user.username).first():
+    if db.query(User).filter(func.lower(User.username) == clean_username.lower()).first():
         raise HTTPException(status_code=409, detail="Username already taken")
 
     new_user = User(
-        name=user.name,
-        username=user.username,
-        email=user.email,
+        name=user.name.strip(),
+        username=clean_username,
+        email=clean_email,
         hashed_password=hash_password(user.password),
         learning_goal=user.learning_goal,
     )
@@ -37,7 +42,8 @@ class LoginRequest(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email).first()
+    clean_email = payload.email.strip().lower()
+    user = db.query(User).filter(func.lower(User.email) == clean_email).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
