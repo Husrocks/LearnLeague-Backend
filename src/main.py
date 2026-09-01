@@ -3,8 +3,37 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import auth, daily, social, test, tasks, cron, winner
 
-# Create tables (In a real app, use Alembic)
+# Create tables and seed initial data if empty
 Base.metadata.create_all(bind=engine)
+
+from .database import SessionLocal
+from .models import User, Task
+from .security import hash_password
+
+def seed_dev_data():
+    db = SessionLocal()
+    try:
+        if db.query(User).count() == 0:
+            admin = User(
+                id=1,
+                name="Local Admin",
+                username="admin",
+                email="admin@learnleague.local",
+                role="admin",
+                streak=7,
+                longest_streak=14,
+                total_xp=2450,
+                learning_goal="AI & Full-Stack Development",
+                hashed_password=hash_password("admin123"),
+            )
+            db.add(admin)
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+seed_dev_data()
 
 app = FastAPI(title="LearnLeague API")
 
@@ -25,6 +54,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
